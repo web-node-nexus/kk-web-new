@@ -29,7 +29,7 @@
 <div class="kk-pagehead">
     <div>
         <h1>Attendance</h1>
-        <p>Sab active employees ki attendance — jo panel se check-in/out karte hain, yahan turant dikhega.</p>
+        <p>Attendance for all active employees — check-ins from the employee panel appear here instantly.</p>
     </div>
 </div>
 

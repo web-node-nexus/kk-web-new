@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\Ajax;
 use App\Support\SiteSettings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +22,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|JsonResponse
     {
         $keys = [];
         foreach (SiteSettings::schema() as $group) {
@@ -44,10 +46,13 @@ class SettingsController extends Controller
             'support_email' => ['required', 'email', 'max:190'],
             'default_hr_email' => ['nullable', 'email', 'max:190'],
             'late_checkin_after' => ['nullable', 'regex:/^\d{2}:\d{2}$/'],
+            'weekend_mode' => ['nullable', 'in:sat_sun,none,custom'],
+            'weekend_days' => ['nullable', 'string', 'max:120'],
         ]);
 
         SiteSettings::setMany($pairs);
+        SiteSettings::forget();
 
-        return back()->with('success', 'Settings saved. ON/OFF changes apply immediately.');
+        return Ajax::ok($request, 'Settings saved. Changes apply immediately.', route('admin.settings'));
     }
 }

@@ -95,7 +95,7 @@ class AttendanceController extends Controller
                 $key = $cursor->toDateString();
                 $rec = $monthRows->get($key);
                 $status = $this->displayStatus($rec);
-                $isWeekend = $cursor->isWeekend();
+                $isWeekend = \App\Support\SiteSettings::isWeekendDay($cursor);
                 $monthDays->push([
                     'date' => $cursor->copy(),
                     'record' => $rec,

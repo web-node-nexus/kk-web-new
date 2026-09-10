@@ -7,7 +7,7 @@
 <div class="kk-pagehead">
     <div>
         <h1>{{ $mode === 'create' ? 'New announcement' : 'Edit announcement' }}</h1>
-        <p>Choose All employees ya ek specific employee.</p>
+        <p>Send to all employees or one specific employee.</p>
     </div>
     <div class="kk-pagehead__actions">
         <a href="{{ route('admin.announcements.index') }}" class="kk-btn kk-btn-secondary">Back</a>
@@ -20,7 +20,7 @@
 
 <section class="kk-card">
     <div class="kk-card__body">
-        <form class="kk-form" method="POST" action="{{ $mode === 'create' ? route('admin.announcements.store') : route('admin.announcements.update', $item->id) }}" id="annForm">
+        <form class="kk-form" method="POST" action="{{ $mode === 'create' ? route('admin.announcements.store') : route('admin.announcements.update', $item->id) }}" id="annForm" enctype="multipart/form-data">
             @csrf
             @if ($mode === 'edit') @method('PUT') @endif
 
@@ -65,7 +65,25 @@
                             <option value="{{ $st }}" @selected(old('status', $item->status ?? 'published') === $st)>{{ ucfirst($st) }}</option>
                         @endforeach
                     </select>
-                    <p class="kk-muted" style="margin:6px 0 0;font-size:12px">Published = employee panel me dikhega</p>
+                    <p class="kk-muted" style="margin:6px 0 0;font-size:12px">Published announcements appear in the employee panel.</p>
+                </div>
+
+                <div class="kk-field">
+                    <label>Link (optional)</label>
+                    <input type="url" name="link_url" value="{{ old('link_url', $item->link_url ?? '') }}" placeholder="https://example.com/details">
+                </div>
+
+                <div class="kk-field" style="grid-column:1/-1">
+                    <label>Image (optional)</label>
+                    <input type="file" name="image" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+                    @if ($item?->imageUrl())
+                        <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+                            <img src="{{ $item->imageUrl() }}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid #e2e8f0">
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                                <input type="checkbox" name="remove_image" value="1"> Remove current image
+                            </label>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="kk-field" style="grid-column:1/-1">

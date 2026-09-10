@@ -106,8 +106,18 @@
                                 placeholder="{{ $mode === 'edit' ? 'Blank = keep old password' : 'Type panel password here' }}"
                                 style="letter-spacing:.02em"
                             >
+                        @elseif ($name === 'employee_code')
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <input id="f_{{ $name }}" type="text" name="{{ $name }}" value="{{ $value }}" placeholder="Leave blank to auto-generate" style="flex:1">
+                                <button type="button" class="kk-btn kk-btn-secondary" id="genEmpCodeBtn">Generate</button>
+                            </div>
                         @else
                             <input id="f_{{ $name }}" type="{{ $type === 'number' ? 'number' : ($type === 'email' ? 'email' : ($type === 'time' ? 'time' : ($type === 'date' ? 'date' : ($type === 'datetime-local' ? 'datetime-local' : 'text')))) }}" name="{{ $name }}" value="{{ $value }}" @if(($type ?? '') === 'email') autocomplete="off" @endif>
+                        @endif
+                        @if ($type === 'file' && $mode === 'edit' && $name === 'photo' && !empty($item->photo))
+                            <div style="margin-top:8px">
+                                <img src="{{ asset($item->photo) }}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:12px;border:1px solid #e2e8f0">
+                            </div>
                         @endif
                         @if (!empty($field['hint']))
                             <p style="margin:6px 0 0;font-size:12px;color:#64748b">{{ $field['hint'] }}</p>
@@ -125,6 +135,44 @@
     </div>
 </section>
 @endsection
+
+@if (($mod['key'] ?? '') === 'employees')
+@push('scripts')
+<script>
+(() => {
+  const btn = document.getElementById('genEmpCodeBtn');
+  const input = document.getElementById('f_employee_code');
+  if (!btn || !input) return;
+  btn.addEventListener('click', async () => {
+    try {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content
+        || document.querySelector('input[name="_token"]')?.value;
+      const res = await fetch(@json(route('admin.employees.generate-code')), {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': token || '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.employee_code) {
+        input.value = data.employee_code;
+      } else if (window.kkToast) {
+        window.kkToast(data.message || 'Could not generate ID');
+      } else {
+        alert(data.message || 'Could not generate ID');
+      }
+    } catch (e) {
+      alert('Could not generate employee ID');
+    }
+  });
+})();
+</script>
+@endpush
+@endif
 
 @if(collect($mod['fields'] ?? [])->contains(fn ($f) => ($f['type'] ?? '') === 'hr_picker'))
 @push('scripts')

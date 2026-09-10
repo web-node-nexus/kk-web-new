@@ -10,6 +10,7 @@ class PayrollRecord extends Model
     protected $fillable = [
         'employee_id',
         'month',
+        'issue_date',
         'basic',
         'allowances',
         'deductions',
@@ -28,6 +29,7 @@ class PayrollRecord extends Model
             'allowances' => 'decimal:2',
             'deductions' => 'decimal:2',
             'net_pay' => 'decimal:2',
+            'issue_date' => 'date',
             'paid_at' => 'datetime',
         ];
     }

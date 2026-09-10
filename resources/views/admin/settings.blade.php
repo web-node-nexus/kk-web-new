@@ -5,7 +5,10 @@
 <div class="kk-pagehead">
     <div>
         <h1>Settings</h1>
-        <p>Company details + features ON/OFF — sab yahi se control karo.</p>
+        <p>Company details, weekend rules, and feature switches — control everything from here.</p>
+    </div>
+    <div class="kk-pagehead__actions">
+        <a href="{{ route('admin.profile.edit') }}" class="kk-btn kk-btn-secondary">Change password / profile</a>
     </div>
 </div>
 
@@ -39,14 +42,26 @@
                 @else
                     <div class="kk-form-grid">
                         @foreach ($group['fields'] as $field)
-                            <div class="kk-field" style="{{ in_array($field['key'], ['company_address','support_phone'], true) ? 'grid-column:1/-1' : '' }}">
+                            <div class="kk-field" style="{{ in_array($field['key'], ['company_address','support_phone','weekend_days'], true) ? 'grid-column:1/-1' : '' }}">
                                 <label>{{ $field['label'] }}</label>
-                                <input
-                                    type="{{ $field['type'] === 'email' ? 'email' : 'text' }}"
-                                    name="{{ $field['key'] }}"
-                                    value="{{ old($field['key'], $values[$field['key']] ?? '') }}"
-                                    @if(in_array($field['key'], ['company_name','support_email'], true)) required @endif
-                                >
+                                @if (($field['type'] ?? '') === 'select')
+                                    <select name="{{ $field['key'] }}">
+                                        @foreach (($field['options'] ?? []) as $optVal => $optLabel)
+                                            <option value="{{ $optVal }}" @selected((string)old($field['key'], $values[$field['key']] ?? 'sat_sun') === (string)$optVal)>{{ $optLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input
+                                        type="{{ ($field['type'] ?? '') === 'email' ? 'email' : 'text' }}"
+                                        name="{{ $field['key'] }}"
+                                        value="{{ old($field['key'], $values[$field['key']] ?? '') }}"
+                                        @if(in_array($field['key'], ['company_name','support_email'], true)) required @endif
+                                        @if($field['key'] === 'weekend_days') placeholder="sat,sun" @endif
+                                    >
+                                @endif
+                                @if (!empty($field['hint']))
+                                    <p class="kk-muted" style="margin:6px 0 0;font-size:12px">{{ $field['hint'] }}</p>
+                                @endif
                             </div>
                         @endforeach
                     </div>

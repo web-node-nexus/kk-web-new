@@ -109,7 +109,6 @@ class AdminPanelSeeder extends Seeder
             ['name' => 'Yashi Sachan', 'email' => 'yashi@kkdigital.com', 'role_title' => 'Project Head', 'department_id' => $prd?->id, 'employee_code' => 'KK001', 'salary' => 55000],
             ['name' => 'Tapaswi Tiwari', 'email' => 'tapaswi@kkdigital.com', 'role_title' => 'Digital Marketing Head', 'department_id' => $mkt?->id, 'employee_code' => 'KK002', 'salary' => 48000],
             ['name' => 'Pranjal Ithapr', 'email' => 'pranjal@kkdigital.com', 'role_title' => 'Intern', 'department_id' => $eng?->id, 'employee_code' => 'KK003', 'salary' => 12000, 'employment_type' => 'Internship'],
-            ['name' => 'Uddhav Dabhade', 'email' => 'uddhav@kkdigital.com', 'role_title' => 'Intern', 'department_id' => $eng?->id, 'employee_code' => 'KK004', 'salary' => 12000, 'employment_type' => 'Internship'],
             ['name' => 'Amit Yadav', 'email' => 'amit@kkdigital.com', 'role_title' => 'Backend Developer', 'department_id' => $eng?->id, 'employee_code' => 'KK005', 'salary' => 42000],
         ];
         foreach ($employees as $emp) {

@@ -48,7 +48,7 @@
         <div class="ep-userchip">
         <div class="ep-avatar">
             @if ($emp?->photoUrl())
-                <img src="{{ $emp->photoUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
+                <img src="{{ $emp->photoUrl() }}?v={{ optional($emp->updated_at)->timestamp }}" alt="">
             @else
                 {{ $initials ?: 'E' }}
             @endif
@@ -56,6 +56,9 @@
             <div>
                 <strong>{{ $authUser->name }}</strong>
                 <em>{{ $authUser->adminRole?->name ?: ($emp->role_title ?? 'Team member') }}</em>
+                @if ($emp?->employee_code)
+                    <em style="display:block;margin-top:2px;opacity:.9">ID: {{ $emp->employee_code }}</em>
+                @endif
             </div>
         </div>
 
@@ -100,6 +103,14 @@
                 My Tasks
             </a>
             @endif
+            <a href="{{ route('employee.todos.index') }}" class="{{ request()->routeIs('employee.todos*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h11M9 12h11M9 19h11M5 5h.01M5 12h.01M5 19h.01"/></svg>
+                My To-do
+            </a>
+            <a href="{{ route('employee.projects.index') }}" class="{{ request()->routeIs('employee.projects*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Project Groups
+            </a>
             @if ($authUser?->canEmployee('employee.chat'))
             <a href="{{ route('employee.chat.index') }}" class="{{ request()->routeIs('employee.chat*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
@@ -196,8 +207,57 @@
         });
         document.addEventListener('click', () => { if (noteDrop) noteDrop.hidden = true; });
         noteDrop?.addEventListener('click', (e) => e.stopPropagation());
+
+        const notifySound = new Audio(@json(asset('sounds/notify.mp3')));
+        notifySound.preload = 'auto';
+        ['pointerdown', 'keydown', 'click', 'touchstart'].forEach((evt) => {
+            window.addEventListener(evt, () => { try { notifySound.load(); } catch (e) {} }, { once: true, passive: true });
+        });
+        let lastUnread = {{ (int) ($unreadNoteCount ?? 0) }};
+        const pollNotes = async () => {
+            try {
+                const res = await fetch(@json(route('employee.notifications.index')) + '?partial=count', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const n = Number(data.unread ?? data.count ?? 0);
+                if (n > lastUnread) {
+                    try { notifySound.currentTime = 0; notifySound.play().catch(() => {}); } catch (e) {}
+                }
+                lastUnread = n;
+                const badge = noteBtn?.querySelector('b');
+                if (noteBtn) {
+                    if (n > 0) {
+                        if (badge) badge.textContent = n > 99 ? '99+' : String(n);
+                        else {
+                            const b = document.createElement('b');
+                            b.textContent = n > 99 ? '99+' : String(n);
+                            noteBtn.appendChild(b);
+                        }
+                    } else if (badge) badge.remove();
+                }
+            } catch (e) {}
+        };
+        setInterval(pollNotes, 20000);
     })();
 </script>
+<script>
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pass-toggle]');
+  if (!btn) return;
+  const wrap = btn.closest('.kk-pass-wrap');
+  const input = wrap?.querySelector('input');
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+});
+</script>
+<style>
+.kk-pass-wrap{position:relative;display:block}
+.kk-pass-wrap input{width:100%;padding-right:44px}
+.kk-pass-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;cursor:pointer;padding:4px;line-height:0}
+</style>
 <script src="{{ asset('js/kk-ajax.js') }}"></script>
 <script src="{{ asset('js/kk-live.js') }}"></script>
 @stack('scripts')

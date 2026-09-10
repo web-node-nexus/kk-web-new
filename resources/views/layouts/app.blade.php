@@ -18,10 +18,21 @@
 
     @if (session('success'))
         <div class="container-tn pt-4">
-            <div class="tn-card border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+            <div class="tn-card border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800" data-flash-success style="transition:opacity .35s ease,transform .35s ease">
                 {{ session('success') }}
             </div>
         </div>
+        <script>
+        (() => {
+          const el = document.querySelector('[data-flash-success]');
+          if (!el) return;
+          setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-6px)';
+            setTimeout(() => el.remove(), 350);
+          }, 4000);
+        })();
+        </script>
     @endif
 
     <main>@yield('content')</main>
@@ -37,74 +48,6 @@
         const toggle = document.getElementById('nav-toggle');
         const menu = document.getElementById('mobile-nav');
         if (toggle && menu) toggle.addEventListener('click', () => menu.classList.toggle('hidden'));
-
-        const heroVideo = document.getElementById('hero-circle-video');
-        const heroSection = document.querySelector('.tn-hero');
-        if (heroVideo && heroSection) {
-            let heroInView = false;
-            let audioUnlocked = false;
-
-            const enableSound = () => {
-                heroVideo.muted = false;
-                heroVideo.volume = 1;
-                heroVideo.removeAttribute('muted');
-            };
-
-            const playHero = async () => {
-                if (!heroInView) return;
-                enableSound();
-                try {
-                    await heroVideo.play();
-                    enableSound();
-                } catch (e) {
-                    // Browser needs one user gesture for sound
-                    heroVideo.muted = true;
-                    try { await heroVideo.play(); } catch (_) {}
-                    if (audioUnlocked) {
-                        enableSound();
-                        heroVideo.play().catch(() => {});
-                    }
-                }
-            };
-
-            const pauseHero = () => {
-                heroVideo.pause();
-            };
-
-            const unlockAudio = () => {
-                audioUnlocked = true;
-                enableSound();
-                if (heroInView) playHero();
-            };
-
-            ['pointerdown', 'touchstart', 'keydown', 'click'].forEach((evt) => {
-                window.addEventListener(evt, unlockAudio, { once: true, passive: true });
-            });
-
-            // First scroll into hero also counts as interaction for many browsers
-            window.addEventListener('wheel', unlockAudio, { once: true, passive: true });
-            window.addEventListener('touchmove', unlockAudio, { once: true, passive: true });
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    heroInView = entry.isIntersecting && entry.intersectionRatio >= 0.35;
-                    if (heroInView) playHero();
-                    else pauseHero();
-                });
-            }, { threshold: [0, 0.35, 0.6] });
-
-            observer.observe(heroSection);
-
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) pauseHero();
-                else if (heroInView) playHero();
-            });
-
-            // Auto-try with sound on load if hero visible
-            enableSound();
-            if (heroVideo.readyState >= 2) playHero();
-            else heroVideo.addEventListener('loadeddata', playHero, { once: true });
-        }
     </script>
 </body>
 </html>

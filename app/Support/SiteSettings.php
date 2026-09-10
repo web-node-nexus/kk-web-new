@@ -31,6 +31,42 @@ class SiteSettings
         return in_array((string) $val, ['1', 'true', 'on', 'yes'], true);
     }
 
+    /**
+     * Whether the given date is a non-working weekend day based on settings.
+     */
+    public static function isWeekendDay(\Carbon\CarbonInterface $date): bool
+    {
+        $mode = (string) self::get('weekend_mode', 'sat_sun');
+
+        if ($mode === 'none') {
+            return false;
+        }
+
+        if ($mode === 'custom') {
+            $raw = strtolower((string) self::get('weekend_days', 'sat,sun'));
+            $map = [
+                'sun' => 0, 'sunday' => 0,
+                'mon' => 1, 'monday' => 1,
+                'tue' => 2, 'tuesday' => 2,
+                'wed' => 3, 'wednesday' => 3,
+                'thu' => 4, 'thursday' => 4,
+                'fri' => 5, 'friday' => 5,
+                'sat' => 6, 'saturday' => 6,
+            ];
+            $days = [];
+            foreach (preg_split('/[\s,]+/', $raw) ?: [] as $part) {
+                $part = trim($part);
+                if ($part !== '' && isset($map[$part])) {
+                    $days[] = $map[$part];
+                }
+            }
+
+            return in_array((int) $date->dayOfWeek, $days, true);
+        }
+
+        return $date->isWeekend();
+    }
+
     public static function set(string $key, mixed $value): void
     {
         SiteSetting::put($key, is_bool($value) ? ($value ? '1' : '0') : $value);
@@ -69,12 +105,18 @@ class SiteSettings
                     ['key' => 'currency', 'label' => 'Currency', 'type' => 'text'],
                     ['key' => 'default_hr_email', 'label' => 'Default HR email', 'type' => 'email'],
                     ['key' => 'late_checkin_after', 'label' => 'Late check-in after (HH:MM)', 'type' => 'text'],
+                    ['key' => 'weekend_mode', 'label' => 'Weekend / working days', 'type' => 'select', 'options' => [
+                        'sat_sun' => 'Weekends = Saturday & Sunday (default)',
+                        'none' => 'No weekends (all days are working days)',
+                        'custom' => 'Custom weekend days',
+                    ]],
+                    ['key' => 'weekend_days', 'label' => 'Custom weekend days (comma: sun,mon,tue,wed,thu,fri,sat)', 'type' => 'text', 'hint' => 'Used only when Weekend mode = Custom'],
                 ],
             ],
             'website' => [
                 'label' => 'Website features (ON / OFF)',
                 'fields' => [
-                    ['key' => 'feature_careers', 'label' => 'Careers / Job applications', 'type' => 'toggle', 'hint' => 'Off hone par apply form band'],
+                    ['key' => 'feature_careers', 'label' => 'Careers / Job applications', 'type' => 'toggle', 'hint' => 'When off, the apply form is disabled'],
                     ['key' => 'feature_contact_form', 'label' => 'Contact form', 'type' => 'toggle'],
                     ['key' => 'feature_project_form', 'label' => 'Start project form', 'type' => 'toggle'],
                     ['key' => 'feature_newsletter', 'label' => 'Newsletter signup', 'type' => 'toggle'],

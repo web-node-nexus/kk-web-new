@@ -54,9 +54,9 @@ class ProfileController extends Controller
         $request->validate([
             'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ], [
-            'avatar.required' => 'Pehle photo choose karo.',
-            'avatar.image' => 'JPG, PNG ya WEBP photo lagao.',
-            'avatar.max' => 'Photo max 4 MB honi chahiye.',
+            'avatar.required' => 'Please choose a photo first.',
+            'avatar.image' => 'Use a JPG, PNG, or WEBP photo.',
+            'avatar.max' => 'Photo must be 4 MB or smaller.',
         ]);
 
         $user = Auth::user();
@@ -65,7 +65,7 @@ class ProfileController extends Controller
         $path = $request->file('avatar')->store('avatars', 'public');
         $user->update(['avatar_path' => $path]);
 
-        return back()->with('success', 'Profile photo lag gayi.');
+        return back()->with('success', 'Profile photo updated.');
     }
 
     public function destroyAvatar(): RedirectResponse
@@ -74,7 +74,7 @@ class ProfileController extends Controller
         $this->deleteAvatarFile($user);
         $user->update(['avatar_path' => null]);
 
-        return back()->with('success', 'Profile photo hata di.');
+        return back()->with('success', 'Profile photo removed.');
     }
 
     protected function deleteAvatarFile($user): void

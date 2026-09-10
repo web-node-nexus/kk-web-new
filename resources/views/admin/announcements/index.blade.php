@@ -6,7 +6,7 @@
 <div class="kk-pagehead">
     <div>
         <h1>Announcements</h1>
-        <p>Sab employees ko ya kisi ek employee ko message bhejo — unke panel me dikhega.</p>
+        <p>Send a message to all employees or one employee — it appears in their panel.</p>
     </div>
     <div class="kk-pagehead__actions">
         <a href="{{ route('admin.announcements.create') }}" class="kk-btn kk-btn-primary">New announcement</a>

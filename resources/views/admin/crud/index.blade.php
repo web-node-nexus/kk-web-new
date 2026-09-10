@@ -52,8 +52,8 @@
     <div class="kk-card__body" style="padding:14px 18px">
         <p style="margin:0;font-size:13px;color:#64748b;line-height:1.55">
             <strong style="color:#0f172a">HR assign:</strong>
-            Neeche se HR <strong>search karke select</strong> karo (name / email / role), interviews tick karo, phir <strong>Send selected to HR</strong> — ya row pe <strong>Send to HR</strong>.
-            Selected HR ke employee panel me interview dikhega (email match zaroori hai).
+            Neeche se HR <strong>search and select</strong> (name / email / role), tick interviews, then <strong>Send selected to HR</strong> — or use <strong>Send to HR</strong> on a row.
+            The interview appears in the selected HR employee panel (email must match).
         </p>
     </div>
 </div>
@@ -140,7 +140,19 @@
                         @foreach ($mod['columns'] as $col)
                             @php $raw = $val($item, $col['key']); @endphp
                             <td>
-                                @if (($col['type'] ?? '') === 'status')
+                                @if (($col['type'] ?? '') === 'employee')
+                                    <div style="display:flex;align-items:center;gap:10px">
+                                        @if (method_exists($item, 'photoUrl') && $item->photoUrl())
+                                            <img src="{{ $item->photoUrl() }}" alt="" style="width:36px;height:36px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0;flex-shrink:0">
+                                        @else
+                                            @php
+                                                $ini = collect(explode(' ', (string) $raw))->filter()->take(2)->map(fn ($p) => strtoupper(substr($p, 0, 1)))->implode('');
+                                            @endphp
+                                            <span style="width:36px;height:36px;border-radius:10px;background:#0f766e;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ $ini ?: 'E' }}</span>
+                                        @endif
+                                        <span class="kk-row-title">{{ $raw ?? '—' }}</span>
+                                    </div>
+                                @elseif (($col['type'] ?? '') === 'status')
                                     <span class="kk-pill kk-pill--{{ $raw === 'reviewed' ? 'review' : ($raw === 'hired' || $raw === 'approved' ? 'hired' : $raw) }}">{{ $raw === 'internship_offered' ? 'internship offered' : (in_array($raw, ['hired', 'approved'], true) ? 'approved' : $raw) }}</span>
                                 @elseif (($col['type'] ?? '') === 'bool')
                                     <span class="kk-pill {{ $raw ? 'kk-pill--active' : 'kk-pill--closed' }}">{{ $raw ? 'Yes' : 'No' }}</span>
@@ -206,9 +218,9 @@
                             <div class="kk-empty">
                                 <strong>No records yet</strong>
                                 @if ($isHrNotify)
-                                    Job Applications se Interview status set karo, ya yahan Add New se schedule banao.
+                                    Set Interview status from Job Applications, or schedule one with Add New.
                                 @else
-                                    Jab website se koi apply karega, yahan turant dikhega.
+                                    When someone applies from the website, it will show up here.
                                 @endif
                             </div>
                         </td>
@@ -280,7 +292,7 @@
     fillIds('bulkIds');
     if (!boxes().some(b => b.checked)) {
       e.preventDefault();
-      alert('Pehle kam se kam 1 application select karo.');
+      alert('Select at least 1 application first.');
     }
   });
   document.getElementById('hrBulkForm')?.addEventListener('submit', (e) => {
@@ -288,12 +300,12 @@
     const hrEmail = document.querySelector('#hrPickerBulk .kk-hr-picker__email')?.value?.trim();
     if (!hrEmail) {
       e.preventDefault();
-      alert('Pehle HR search karke select karo.');
+      alert('Search and select an HR contact first.');
       return;
     }
     if (!boxes().some(b => b.checked)) {
       e.preventDefault();
-      alert('Pehle kam se kam 1 interview select karo.');
+      alert('Select at least 1 interview first.');
       return;
     }
     if (!confirm('Send selected interview(s) to selected HR?')) e.preventDefault();
@@ -306,7 +318,7 @@
       hidden.value = picked;
     }
     if (!hidden.value) {
-      alert('Upar se HR search karke select karo, phir Send to HR dabao.');
+      alert('Search and select HR above, then click Send to HR.');
       return false;
     }
     return confirm('Send this interview to ' + hidden.value + '?');

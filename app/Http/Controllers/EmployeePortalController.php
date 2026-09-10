@@ -9,6 +9,7 @@ use App\Models\Interview;
 use App\Models\LeaveRequest;
 use App\Models\LiveChatMessage;
 use App\Models\PayrollRecord;
+use App\Models\PersonalTodo;
 use App\Models\WorkTask;
 use App\Models\WorkTaskAssignee;
 use App\Models\WorkTaskReply;
@@ -21,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class EmployeePortalController extends Controller
@@ -365,6 +367,43 @@ class EmployeePortalController extends Controller
         ]);
     }
 
+    public function updatePhoto(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $employee = $this->employeeOrAbort();
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [
+            'photo.required' => 'Please choose a photo.',
+            'photo.image' => 'Use a JPG, PNG, or WEBP image.',
+            'photo.max' => 'Photo must be 4 MB or smaller.',
+        ]);
+
+        if ($employee->photo_path) {
+            Storage::disk('public')->delete($employee->photo_path);
+        }
+
+        $path = $request->file('photo')->store('employees', 'public');
+        $employee->update(['photo_path' => $path]);
+
+        // Warm public URL so browsers can load immediately after upload
+        clearstatcache();
+
+        return redirect()->route('employee.profile')->with('success', 'Profile photo updated.');
+    }
+
+    public function destroyPhoto(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $employee = $this->employeeOrAbort();
+
+        if ($employee->photo_path) {
+            Storage::disk('public')->delete($employee->photo_path);
+            $employee->update(['photo_path' => null]);
+        }
+
+        return redirect()->route('employee.profile')->with('success', 'Profile photo removed.');
+    }
+
     public function updatePassword(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $data = $request->validate([
@@ -539,10 +578,20 @@ class EmployeePortalController extends Controller
         return view('employee.chat.index');
     }
 
-    public function notifications(): View
+    public function notifications(Request $request): View|\Illuminate\Http\JsonResponse
     {
-        abort_unless(Auth::user()?->hasAnyEmployeeModule(), 403, 'Admin ne ye page aapke role me enable nahi kiya.');
+        abort_unless(Auth::user()?->hasAnyEmployeeModule(), 403, 'This page is not enabled for your role.');
         $employee = $this->employeeOrAbort();
+
+        if ($request->input('partial') === 'count' || $request->wantsJson()) {
+            $unread = EmployeeNotification::query()
+                ->where('employee_id', $employee->id)
+                ->whereNull('read_at')
+                ->count();
+
+            return response()->json(['unread' => $unread, 'count' => $unread]);
+        }
+
         $notifications = EmployeeNotification::query()
             ->where('employee_id', $employee->id)
             ->latest()
@@ -742,5 +791,69 @@ class EmployeePortalController extends Controller
             'Cache-Control' => 'no-cache',
             'X-Accel-Buffering' => 'no',
         ]);
+    }
+
+    public function todos(Request $request): View
+    {
+        $employee = $this->employeeOrAbort();
+        $filter = $request->string('filter')->toString() ?: 'open';
+
+        $items = PersonalTodo::query()
+            ->forEmployee($employee->id)
+            ->when($filter === 'open', fn ($qr) => $qr->where('is_done', false))
+            ->when($filter === 'done', fn ($qr) => $qr->where('is_done', true))
+            ->orderBy('is_done')
+            ->orderByRaw("FIELD(priority, 'high', 'medium', 'low')")
+            ->orderBy('due_date')
+            ->latest('id')
+            ->paginate(30)
+            ->withQueryString();
+
+        $counts = [
+            'open' => PersonalTodo::query()->forEmployee($employee->id)->where('is_done', false)->count(),
+            'done' => PersonalTodo::query()->forEmployee($employee->id)->where('is_done', true)->count(),
+        ];
+
+        return view('employee.todos', compact('items', 'filter', 'counts'));
+    }
+
+    public function storeTodo(Request $request): RedirectResponse|JsonResponse
+    {
+        $employee = $this->employeeOrAbort();
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:190'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'priority' => ['required', 'in:low,medium,high'],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        PersonalTodo::query()->create([
+            'owner_type' => 'employee',
+            'owner_id' => $employee->id,
+            'title' => $data['title'],
+            'notes' => filled($data['notes'] ?? null) ? $data['notes'] : null,
+            'priority' => $data['priority'],
+            'due_date' => filled($data['due_date'] ?? null) ? $data['due_date'] : null,
+            'is_done' => false,
+        ]);
+
+        return Ajax::ok($request, 'To-do added.', route('employee.todos.index'));
+    }
+
+    public function toggleTodo(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $employee = $this->employeeOrAbort();
+        $item = PersonalTodo::query()->forEmployee($employee->id)->findOrFail($id);
+        $item->is_done ? $item->markOpen() : $item->markDone();
+
+        return Ajax::ok($request, $item->fresh()->is_done ? 'Marked as done.' : 'Marked as open.', route('employee.todos.index', $request->only('filter')));
+    }
+
+    public function destroyTodo(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $employee = $this->employeeOrAbort();
+        PersonalTodo::query()->forEmployee($employee->id)->whereKey($id)->delete();
+
+        return Ajax::ok($request, 'To-do removed.', route('employee.todos.index'));
     }
 }

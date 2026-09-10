@@ -45,6 +45,7 @@
             ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'icon' => 'home'],
             ['label' => 'Overview', 'route' => 'admin.overview', 'match' => 'admin.overview', 'icon' => 'grid'],
             ['label' => 'Projects', 'route' => 'admin.works.index', 'match' => 'admin.works.*', 'icon' => 'folder', 'permission' => 'module.client-projects'],
+            ['label' => 'To-do List', 'route' => 'admin.todos.index', 'match' => 'admin.todos.*', 'icon' => 'check'],
         ],
         'APPLICATIONS' => [
             ['label' => 'Job Applications', 'route' => 'admin.module.index', 'params' => ['module' => 'applications'], 'match' => 'admin.module.*', 'module' => 'applications', 'icon' => 'file', 'badge' => $newApps],
@@ -54,8 +55,10 @@
             ['label' => 'Job Openings', 'route' => 'admin.module.index', 'params' => ['module' => 'jobs'], 'match' => 'admin.module.*', 'module' => 'jobs', 'icon' => 'briefcase'],
             ['label' => 'Departments', 'route' => 'admin.module.index', 'params' => ['module' => 'departments'], 'match' => 'admin.module.*', 'module' => 'departments', 'icon' => 'building'],
         ],
-        'CAREERS WEBSITE' => [
+        'WEBSITE CONTENT' => [
             ['label' => 'Career Page', 'route' => 'admin.career-page', 'match' => 'admin.career-page', 'icon' => 'globe'],
+            ['label' => 'Team Members', 'route' => 'admin.module.index', 'params' => ['module' => 'team-members'], 'match' => 'admin.module.*', 'module' => 'team-members', 'icon' => 'users'],
+            ['label' => 'Portfolio Projects', 'route' => 'admin.module.index', 'params' => ['module' => 'portfolio'], 'match' => 'admin.module.*', 'module' => 'portfolio', 'icon' => 'image'],
         ],
         'EMPLOYEES' => [
             ['label' => 'Employees', 'route' => 'admin.module.index', 'params' => ['module' => 'employees'], 'match' => 'admin.module.*', 'module' => 'employees', 'icon' => 'user'],
@@ -261,7 +264,7 @@
                                 <span>{{ $u?->email }}</span>
                             </div>
                         </div>
-                        <form method="POST" action="{{ route('admin.profile.avatar') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ route('admin.profile.avatar') }}" enctype="multipart/form-data" data-no-ajax>
                             @csrf
                             <label class="kk-drop__item kk-drop__item--btn">
                                 Change photo
@@ -269,6 +272,7 @@
                             </label>
                         </form>
                         <a class="kk-drop__item" href="{{ route('admin.profile.edit') }}">My profile</a>
+                        <a class="kk-drop__item" href="{{ route('admin.profile.edit') }}#password">Change password</a>
                         @if (! $u || $u->hasPermission('settings.view'))
                             <a class="kk-drop__item" href="{{ route('admin.settings') }}">Settings</a>
                         @endif
@@ -331,6 +335,9 @@
   document.addEventListener('click', closeDrops);
 
   const summaryUrl = @json(route('admin.inbox.summary'));
+  const notifySound = new Audio(@json(asset('sounds/notify.mp3')));
+  notifySound.preload = 'auto';
+  let lastNotifCount = null;
   const paintBadge = (key, n) => {
     const el = document.querySelector('[data-badge="'+key+'"]');
     if (!el) return;
@@ -342,18 +349,59 @@
       el.hidden = true;
     }
   };
+  // Unlock notification sound after first user gesture (browser autoplay policy)
+  ['pointerdown', 'keydown', 'click', 'touchstart'].forEach((evt) => {
+    window.addEventListener(evt, () => { try { notifySound.load(); } catch (e) {} }, { once: true, passive: true });
+  });
+  const playNotify = () => {
+    try {
+      notifySound.currentTime = 0;
+      const p = notifySound.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {}
+  };
   const refreshBadges = async () => {
     try {
       const res = await fetch(summaryUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
       if (!res.ok) return;
       const data = await res.json();
+      const n = Number(data.notifications) || 0;
+      if (lastNotifCount !== null && n > lastNotifCount) {
+        playNotify();
+      }
+      lastNotifCount = n;
       paintBadge('notifications', data.notifications);
       paintBadge('messages', data.messages);
     } catch (e) {}
   };
   setInterval(refreshBadges, 20000);
+  refreshBadges();
 })();
 </script>
+<script>
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pass-toggle]');
+  if (!btn) return;
+  const wrap = btn.closest('.kk-pass-wrap');
+  const input = wrap?.querySelector('input');
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  const open = btn.querySelector('.kk-eye-open');
+  const closed = btn.querySelector('.kk-eye-closed');
+  if (open && closed) {
+    open.hidden = show;
+    closed.hidden = !show;
+  }
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+});
+</script>
+<style>
+.kk-pass-wrap{position:relative;display:block}
+.kk-pass-wrap input{width:100%;padding-right:44px}
+.kk-pass-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;cursor:pointer;padding:4px;line-height:0}
+.kk-pass-toggle:hover{color:#0f172a}
+</style>
     <script src="{{ asset('js/kk-ajax.js') }}"></script>
     <script src="{{ asset('js/kk-live.js') }}"></script>
 @stack('scripts')

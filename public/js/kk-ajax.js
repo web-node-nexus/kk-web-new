@@ -1,5 +1,21 @@
 (() => {
   const token = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+  const dismissFlash = (el, delay = 4000) => {
+    if (!el || el.dataset.autoHide === '1') return;
+    el.dataset.autoHide = '1';
+    window.setTimeout(() => {
+      el.classList.add('is-hiding');
+      window.setTimeout(() => el.remove(), 380);
+    }, delay);
+  };
+
+  const autoHideFlashes = () => {
+    document.querySelectorAll(
+      '.kk-flash:not(.kk-flash--error), .ep-flash--ok, .kk-alert-success, [data-flash-success]'
+    ).forEach((el) => dismissFlash(el, 4000));
+  };
+
   const toast = (msg, err) => {
     if (!msg) return;
     document.querySelectorAll('.kk-toast,.ep-toast').forEach((n) => n.remove());
@@ -7,7 +23,10 @@
     el.className = (document.body.classList.contains('ep-body') ? 'ep-toast' : 'kk-toast') + (err ? ' is-err' : '');
     el.textContent = msg;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 4200);
+    setTimeout(() => {
+      el.classList.add('is-hiding');
+      setTimeout(() => el.remove(), 320);
+    }, err ? 5200 : 4000);
   };
 
   const submitAjax = async (form) => {
@@ -47,7 +66,6 @@
         return;
       }
       if (!form.querySelector('input[type="file"]')) {
-        const keep = form.querySelector('[name="_method"], [name="_token"]');
         form.querySelectorAll('textarea, input[type="text"], input[type="search"]').forEach((el) => {
           if (el.name === '_token' || el.name === '_method') return;
           if (el.closest('.kk-chat__composer, .ep-chat__composer')) return;
@@ -71,4 +89,10 @@
     e.preventDefault();
     submitAjax(form);
   });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoHideFlashes);
+  } else {
+    autoHideFlashes();
+  }
 })();

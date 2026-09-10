@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
+use App\Models\CaseStudy;
 use App\Models\ContactInquiry;
 use App\Models\Department;
 use App\Models\Employee;
@@ -13,6 +14,7 @@ use App\Models\JobOpening;
 use App\Models\LeaveRequest;
 use App\Models\PayrollRecord;
 use App\Models\ProjectRequest;
+use App\Models\TeamMember;
 use App\Models\WorkTaskAssignee;
 use App\Services\ApplicationNotifier;
 use App\Services\EmployeeAccountService;
@@ -199,7 +201,7 @@ class CrudController extends Controller
                 'statuses' => ['active', 'inactive'],
                 'with' => ['department'],
                 'columns' => [
-                    ['key' => 'name', 'label' => 'Employee'],
+                    ['key' => 'name', 'label' => 'Employee', 'type' => 'employee'],
                     ['key' => 'role_title', 'label' => 'Role'],
                     ['key' => 'email', 'label' => 'Email'],
                     ['key' => 'employment_type', 'label' => 'Emp type'],
@@ -209,10 +211,10 @@ class CrudController extends Controller
                 'fields' => [
                     ['name' => 'name', 'label' => 'Name', 'required' => true],
                     ['name' => 'email', 'label' => 'Login email (panel)', 'type' => 'email', 'required' => true],
-                    ['name' => 'panel_password', 'label' => 'Panel password *', 'type' => 'text', 'virtual' => true, 'required_on_create' => true, 'hint' => 'Yahi password employee ko mail me jayega. Minimum 6 characters.'],
+                    ['name' => 'panel_password', 'label' => 'Panel password *', 'type' => 'text', 'virtual' => true, 'required_on_create' => true, 'hint' => 'This password is emailed to the employee. Minimum 6 characters.'],
                     ['name' => 'phone', 'label' => 'Phone'],
                     ['name' => 'photo_path', 'label' => 'Employee image', 'type' => 'file'],
-                    ['name' => 'employee_code', 'label' => 'Employee code'],
+                    ['name' => 'employee_code', 'label' => 'Employee ID', 'hint' => 'Leave blank to auto-generate (KkDigital001). Or type your own.'],
                     ['name' => 'role_title', 'label' => 'Role title'],
                     ['name' => 'employment_type', 'label' => 'Emp type', 'type' => 'select', 'options' => Employee::EMP_TYPES, 'required' => true],
                     ['name' => 'job_type', 'label' => 'Job type', 'type' => 'select', 'options' => Employee::JOB_TYPES, 'required' => true],
@@ -347,6 +349,52 @@ class CrudController extends Controller
                     ['name' => 'attachment_path', 'label' => 'Attachment', 'type' => 'file', 'show_only' => true],
                 ],
             ],
+            'team-members' => [
+                'title' => 'Team Members',
+                'model' => TeamMember::class,
+                'subtitle' => 'Add / edit / remove website About page team members',
+                'search' => ['name', 'role', 'bio', 'phone', 'group'],
+                'columns' => [
+                    ['key' => 'name', 'label' => 'Name'],
+                    ['key' => 'role', 'label' => 'Role'],
+                    ['key' => 'group', 'label' => 'Group'],
+                    ['key' => 'phone', 'label' => 'Phone'],
+                    ['key' => 'sort_order', 'label' => 'Order'],
+                ],
+                'fields' => [
+                    ['name' => 'name', 'label' => 'Name', 'required' => true],
+                    ['name' => 'role', 'label' => 'Role', 'required' => true],
+                    ['name' => 'group', 'label' => 'Group', 'type' => 'select', 'options' => ['founder', 'team'], 'required' => true],
+                    ['name' => 'phone', 'label' => 'Phone'],
+                    ['name' => 'photo', 'label' => 'Photo', 'type' => 'file'],
+                    ['name' => 'bio', 'label' => 'Bio', 'type' => 'textarea', 'full' => true],
+                    ['name' => 'sort_order', 'label' => 'Sort order', 'type' => 'number', 'default' => 1],
+                ],
+            ],
+            'portfolio' => [
+                'title' => 'Portfolio Projects',
+                'model' => CaseStudy::class,
+                'subtitle' => 'Add / edit / remove live portfolio case studies shown on the website',
+                'search' => ['title', 'industry', 'summary', 'project_url', 'folder'],
+                'columns' => [
+                    ['key' => 'title', 'label' => 'Project'],
+                    ['key' => 'industry', 'label' => 'Industry'],
+                    ['key' => 'folder', 'label' => 'Folder'],
+                    ['key' => 'project_url', 'label' => 'URL'],
+                    ['key' => 'sort_order', 'label' => 'Order'],
+                ],
+                'fields' => [
+                    ['name' => 'title', 'label' => 'Title', 'required' => true],
+                    ['name' => 'industry', 'label' => 'Industry', 'required' => true],
+                    ['name' => 'folder', 'label' => 'Folder', 'type' => 'select', 'options' => ['website', 'mobile', 'software'], 'required' => true],
+                    ['name' => 'result', 'label' => 'Result label', 'default' => 'Live website'],
+                    ['name' => 'project_url', 'label' => 'Project URL'],
+                    ['name' => 'video', 'label' => 'Video path (public/...)', 'hint' => 'Optional e.g. videos/portfolio/demo.mp4'],
+                    ['name' => 'summary', 'label' => 'Summary', 'type' => 'textarea', 'full' => true, 'required' => true],
+                    ['name' => 'sort_order', 'label' => 'Sort order', 'type' => 'number', 'default' => 1],
+                    ['name' => 'is_featured', 'label' => 'Featured', 'type' => 'checkbox'],
+                ],
+            ],
         ];
     }
 
@@ -478,6 +526,7 @@ class CrudController extends Controller
         $data = $this->validated($request, $mod, 'create');
         // Always read password from request (browser sometimes skips password-type fields)
         $panelPassword = trim((string) $request->input('panel_password', $data['panel_password'] ?? ''));
+        $departmentName = trim((string) $request->input('department_name', $data['department_name'] ?? ''));
         unset($data['panel_password'], $data['department_name'], $data['photo_path']);
 
         if ($module === 'employees' && $panelPassword === '') {
@@ -502,16 +551,32 @@ class CrudController extends Controller
             if (empty($data['description'])) {
                 $data['description'] = $data['title'];
             }
+            $data['department_name'] = $departmentName !== '' ? $departmentName : null;
+            $data['department_id'] = $departmentName !== '' ? $this->departmentIdFromName($departmentName) : null;
         }
         if ($module === 'employees') {
             $data['email'] = strtolower(trim((string) ($data['email'] ?? '')));
             $data['status'] = $data['status'] ?? 'active';
             $data['employment_type'] = $data['employment_type'] ?: 'Full-time';
             $data['job_type'] = $data['job_type'] ?: 'Permanent';
-            $data['department_id'] = $this->departmentIdFromName((string) $request->input('department_name', ''));
+            $data['department_id'] = $this->departmentIdFromName($departmentName);
             if (! filled($data['salary'] ?? null)) {
                 $data['salary'] = null;
             }
+            if (! filled($data['employee_code'] ?? null)) {
+                $data['employee_code'] = Employee::generateCode();
+            }
+        }
+        if ($module === 'portfolio') {
+            $data['slug'] = $this->uniqueCaseStudySlug((string) ($data['title'] ?? 'project'));
+            $data['folder'] = $data['folder'] ?? 'website';
+            $data['is_featured'] = (bool) ($data['is_featured'] ?? false);
+            $data['sort_order'] = $data['sort_order'] ?? ((int) CaseStudy::query()->max('sort_order') + 1);
+        }
+        if ($module === 'team-members') {
+            $data['sort_order'] = $data['sort_order'] ?? ((int) TeamMember::query()->max('sort_order') + 1);
+            $data['group'] = $data['group'] ?? 'team';
+            unset($data['photo']);
         }
 
         /** @var Model $model */
@@ -528,6 +593,9 @@ class CrudController extends Controller
 
         if ($module === 'employees') {
             $this->storeEmployeePhoto($request, $item);
+        }
+        if ($module === 'team-members') {
+            $this->storeTeamMemberPhoto($request, $item);
         }
 
         $extra = '';
@@ -749,6 +817,7 @@ class CrudController extends Controller
         $item = $this->queryFor($mod)->findOrFail($id);
         $data = $this->validated($request, $mod, 'edit', $id);
         $panelPassword = trim((string) $request->input('panel_password', $data['panel_password'] ?? ''));
+        $departmentName = trim((string) $request->input('department_name', $data['department_name'] ?? ''));
         unset($data['panel_password'], $data['department_name'], $data['photo_path']);
 
         if ($module === 'internships') {
@@ -758,9 +827,30 @@ class CrudController extends Controller
         if ($module === 'jobs') {
             $data['is_open'] = $request->boolean('is_open');
         }
+        if (in_array($module, ['jobs', 'internships'], true)) {
+            if ($departmentName === '' && $item->department_name) {
+                $departmentName = (string) $item->department_name;
+            }
+            $data['department_name'] = $departmentName !== '' ? $departmentName : null;
+            $data['department_id'] = $departmentName !== '' ? $this->departmentIdFromName($departmentName) : null;
+        }
         if ($module === 'employees') {
-            $data['department_id'] = $this->departmentIdFromName((string) $request->input('department_name', $item->department?->name ?? ''));
+            $data['department_id'] = $this->departmentIdFromName($departmentName !== '' ? $departmentName : (string) ($item->department?->name ?? ''));
+            if (! filled($data['employee_code'] ?? null)) {
+                $data['employee_code'] = $item->employee_code ?: Employee::generateCode();
+            }
             $this->storeEmployeePhoto($request, $item);
+        }
+        if ($module === 'portfolio') {
+            unset($data['slug']);
+            if (filled($data['title'] ?? null) && $data['title'] !== $item->title) {
+                $data['slug'] = $this->uniqueCaseStudySlug((string) $data['title'], $item->id);
+            }
+            $data['is_featured'] = (bool) ($data['is_featured'] ?? false);
+        }
+        if ($module === 'team-members') {
+            unset($data['photo']);
+            $this->storeTeamMemberPhoto($request, $item);
         }
 
         $item->update($data);
@@ -897,6 +987,53 @@ class CrudController extends Controller
 
         $path = $request->file('photo_path')->store('employees', 'public');
         $employee->update(['photo_path' => $path]);
+    }
+
+    protected function storeTeamMemberPhoto(Request $request, TeamMember $member): void
+    {
+        if (! $request->hasFile('photo')) {
+            return;
+        }
+
+        $uploaded = $request->file('photo');
+        $dir = public_path('images/team');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $name = Str::slug(pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME) ?: 'member');
+        $filename = $name.'-'.uniqid().'.'.$uploaded->getClientOriginalExtension();
+        $uploaded->move($dir, $filename);
+
+        if ($member->photo && str_starts_with((string) $member->photo, 'images/team/') && file_exists(public_path($member->photo))) {
+            @unlink(public_path($member->photo));
+        }
+
+        $member->update(['photo' => 'images/team/'.$filename]);
+    }
+
+    protected function uniqueCaseStudySlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title) ?: 'project';
+        $slug = $base;
+        $i = 2;
+        while (
+            CaseStudy::query()
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = $base.'-'.$i;
+            $i++;
+        }
+
+        return $slug;
+    }
+
+    public function generateEmployeeCode(Request $request): JsonResponse|RedirectResponse
+    {
+        $code = Employee::generateCode();
+
+        return Ajax::ok($request, 'Generated employee ID: '.$code, null, ['employee_code' => $code]);
     }
 
     protected function showEmployee(Employee $employee): View

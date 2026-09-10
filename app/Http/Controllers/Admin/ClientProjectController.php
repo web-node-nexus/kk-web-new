@@ -115,8 +115,8 @@ class ClientProjectController extends Controller
 
         $msg = 'Project saved: '.$project->name.'.';
         $msg .= $mailOk
-            ? ' Client ko confirmation email chali gayi.'
-            : ($request->boolean('send_mail') ? ' Email nahi gayi — mail settings / address check karo.' : '');
+            ? ' Confirmation email sent to the client.'
+            : ($request->boolean('send_mail') ? ' Email could not be sent — check mail settings / address.' : '');
 
         return redirect()->route('admin.works.show', $project->id)->with('success', $msg);
     }
@@ -124,12 +124,14 @@ class ClientProjectController extends Controller
     public function show(int $id): View
     {
         $project = ClientProject::query()
-            ->with(['installments', 'receipts'])
+            ->with(['installments', 'receipts', 'members.employee', 'renewals'])
             ->findOrFail($id);
 
         return view('admin.works.show', [
             'user' => Auth::user(),
             'project' => $project,
+            'employees' => \App\Models\Employee::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'email', 'role_title']),
+            'renewalTypes' => \App\Models\ClientProjectRenewal::TYPES,
         ]);
     }
 
@@ -424,5 +426,97 @@ class ClientProjectController extends Controller
                 'status' => 'pending',
             ]);
         }
+    }
+
+    public function addMember(Request $request, int $id): RedirectResponse
+    {
+        $project = ClientProject::query()->findOrFail($id);
+        $data = $request->validate([
+            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'role_label' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        \App\Models\ClientProjectMember::query()->updateOrCreate(
+            [
+                'client_project_id' => $project->id,
+                'employee_id' => $data['employee_id'],
+            ],
+            [
+                'role_label' => filled($data['role_label'] ?? null) ? $data['role_label'] : null,
+            ]
+        );
+
+        return redirect()
+            ->route('admin.works.show', $project->id)
+            ->with('success', 'Team member added to this project group.');
+    }
+
+    public function removeMember(int $id, int $memberId): RedirectResponse
+    {
+        $project = ClientProject::query()->findOrFail($id);
+        \App\Models\ClientProjectMember::query()
+            ->where('client_project_id', $project->id)
+            ->where('id', $memberId)
+            ->delete();
+
+        return redirect()
+            ->route('admin.works.show', $project->id)
+            ->with('success', 'Team member removed from this project group.');
+    }
+
+    public function storeRenewal(Request $request, int $id): RedirectResponse
+    {
+        $project = ClientProject::query()->findOrFail($id);
+        $data = $request->validate([
+            'type' => ['required', 'in:'.implode(',', array_keys(\App\Models\ClientProjectRenewal::TYPES))],
+            'name' => ['required', 'string', 'max:190'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'renew_date' => ['nullable', 'date'],
+            'status' => ['required', 'in:upcoming,due,paid,cancelled'],
+            'vendor' => ['nullable', 'string', 'max:190'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $data['amount'] = filled($data['amount'] ?? null) ? $data['amount'] : null;
+        $data['renew_date'] = filled($data['renew_date'] ?? null) ? $data['renew_date'] : null;
+        $data['vendor'] = filled($data['vendor'] ?? null) ? $data['vendor'] : null;
+        $data['notes'] = filled($data['notes'] ?? null) ? $data['notes'] : null;
+        $data['client_project_id'] = $project->id;
+
+        \App\Models\ClientProjectRenewal::query()->create($data);
+
+        return redirect()
+            ->route('admin.works.show', $project->id)
+            ->with('success', 'Renewal item added to this project.');
+    }
+
+    public function updateRenewal(Request $request, int $id, int $renewalId): RedirectResponse
+    {
+        $project = ClientProject::query()->findOrFail($id);
+        $renewal = \App\Models\ClientProjectRenewal::query()
+            ->where('client_project_id', $project->id)
+            ->findOrFail($renewalId);
+
+        $data = $request->validate([
+            'status' => ['required', 'in:upcoming,due,paid,cancelled'],
+        ]);
+        $renewal->update($data);
+
+        return redirect()
+            ->route('admin.works.show', $project->id)
+            ->with('success', 'Renewal status updated.');
+    }
+
+    public function destroyRenewal(int $id, int $renewalId): RedirectResponse
+    {
+        $project = ClientProject::query()->findOrFail($id);
+        \App\Models\ClientProjectRenewal::query()
+            ->where('client_project_id', $project->id)
+            ->where('id', $renewalId)
+            ->delete();
+
+        return redirect()
+            ->route('admin.works.show', $project->id)
+            ->with('success', 'Renewal item removed.');
     }
 }

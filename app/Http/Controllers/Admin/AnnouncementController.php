@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Employee;
+use App\Support\Ajax;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -61,14 +64,13 @@ class AnnouncementController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $data = $this->validated($request);
+        $this->storeImage($request, $data);
         Announcement::query()->create($data);
 
-        return redirect()
-            ->route('admin.announcements.index')
-            ->with('success', 'Announcement saved. Published ones show in employee panel.');
+        return Ajax::ok($request, 'Announcement saved. Published ones appear in the employee panel.', route('admin.announcements.index'));
     }
 
     public function edit(int $id): View
@@ -83,24 +85,34 @@ class AnnouncementController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $item = Announcement::query()->findOrFail($id);
-        $item->update($this->validated($request));
+        $data = $this->validated($request);
 
-        return redirect()
-            ->route('admin.announcements.index')
-            ->with('success', 'Announcement updated.');
+        if ($request->boolean('remove_image') && $item->image_path) {
+            Storage::disk('public')->delete($item->image_path);
+            $data['image_path'] = null;
+        }
+
+        $this->storeImage($request, $data, $item);
+        $item->update($data);
+
+        return Ajax::ok($request, 'Announcement updated.', route('admin.announcements.index'));
     }
 
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
-        Announcement::query()->findOrFail($id)->delete();
+        $item = Announcement::query()->findOrFail($id);
+        if ($item->image_path) {
+            Storage::disk('public')->delete($item->image_path);
+        }
+        $item->delete();
 
-        return back()->with('success', 'Announcement deleted.');
+        return Ajax::ok($request, 'Announcement deleted.', route('admin.announcements.index'));
     }
 
-    public function publish(int $id): RedirectResponse
+    public function publish(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $item = Announcement::query()->findOrFail($id);
         $item->update([
@@ -108,7 +120,7 @@ class AnnouncementController extends Controller
             'published_at' => $item->published_at ?: now(),
         ]);
 
-        return back()->with('success', 'Published — visible to selected employees now.');
+        return Ajax::ok($request, 'Published — visible to selected employees now.', route('admin.announcements.index'));
     }
 
     /** @return array<string, mixed> */
@@ -117,6 +129,9 @@ class AnnouncementController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
             'body' => ['required', 'string', 'max:10000'],
+            'link_url' => ['nullable', 'url', 'max:500'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_image' => ['nullable', 'boolean'],
             'audience_type' => ['required', 'in:all,one'],
             'employee_id' => [
                 Rule::requiredIf($request->input('audience_type') === 'one'),
@@ -126,6 +141,8 @@ class AnnouncementController extends Controller
             ],
             'status' => ['required', 'in:draft,published'],
         ]);
+
+        unset($data['image'], $data['remove_image']);
 
         if ($data['audience_type'] === 'all') {
             $data['employee_id'] = null;
@@ -139,6 +156,22 @@ class AnnouncementController extends Controller
             $data['published_at'] = now();
         }
 
+        $data['link_url'] = filled($data['link_url'] ?? null) ? $data['link_url'] : null;
+
         return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    protected function storeImage(Request $request, array &$data, ?Announcement $existing = null): void
+    {
+        if (! $request->hasFile('image')) {
+            return;
+        }
+
+        if ($existing?->image_path) {
+            Storage::disk('public')->delete($existing->image_path);
+        }
+
+        $data['image_path'] = $request->file('image')->store('announcements', 'public');
     }
 }

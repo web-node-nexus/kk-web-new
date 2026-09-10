@@ -241,17 +241,22 @@ a { text-decoration: none; color: inherit; }
     height: auto;
     border-radius: 50%;
     overflow: hidden;
-    box-shadow: 0 25px 60px rgba(24, 60, 120, 0.22);
-    background: #0b1b3a;
+    box-shadow:
+        0 25px 60px rgba(24, 60, 120, 0.22),
+        0 0 0 1px rgba(47, 128, 237, 0.12);
+    background: #ffffff;
     z-index: 1;
+}
+.tn-hero-frame--logo {
+    background: #ffffff;
 }
 .tn-hero-frame::before {
     content: "";
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    padding: 6px;
-    background: linear-gradient(145deg, #2f80ed 0%, #5aa2ff 45%, #2f80ed 100%);
+    padding: 5px;
+    background: linear-gradient(145deg, #2f80ed 0%, #5aa2ff 45%, #1e3a8a 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -263,8 +268,18 @@ a { text-decoration: none; color: inherit; }
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
     border-radius: 50%;
+    background: #ffffff;
+}
+.tn-hero-frame--logo img {
+    object-fit: cover;
+    transform: scale(1.02);
+    transition: transform 0.45s ease;
+}
+.tn-hero-frame--logo:hover img {
+    transform: scale(1.05);
 }
 .tn-hero-frame video::-webkit-media-controls,
 .tn-hero-frame video::-webkit-media-controls-enclosure,

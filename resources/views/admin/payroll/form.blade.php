@@ -56,7 +56,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <p class="kk-muted" style="margin:8px 0 0;font-size:12px">Save ke baad isi employee ke panel → Payroll me slip dikhegi.</p>
+                    <p class="kk-muted" style="margin:8px 0 0;font-size:12px">After save, this slip appears in the employee panel → Payroll.</p>
                     @if ($mode === 'edit')
                         <input type="hidden" name="employee_id" value="{{ $r->employee_id }}">
                     @endif
@@ -65,6 +65,11 @@
                 <div class="kk-field">
                     <label>Month *</label>
                     <input type="month" name="month" value="{{ old('month', $defaultMonth) }}" required>
+                </div>
+                <div class="kk-field">
+                    <label>Issue date</label>
+                    <input type="date" name="issue_date" value="{{ old('issue_date', optional($r->issue_date ?? null)->format('Y-m-d') ?: now()->toDateString()) }}">
+                    <p class="kk-muted" style="margin:6px 0 0;font-size:12px">Date this payroll was issued.</p>
                 </div>
                 <div class="kk-field">
                     <label>Status *</label>

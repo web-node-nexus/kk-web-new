@@ -459,6 +459,14 @@ img { max-width: 100%; display: block; }
   color: #166534;
   border: 1px solid #bbf7d0;
   font-weight: 550;
+  transition: opacity .35s ease, transform .35s ease, max-height .35s ease, margin .35s ease, padding .35s ease;
+}
+.kk-flash.is-hiding,
+.kk-toast.is-hiding,
+.kk-alert-success.is-hiding {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
 }
 .kk-flash--error {
   background: var(--ad-red-soft);
@@ -1318,6 +1326,7 @@ input[type="radio"] {
   font-size: 13px;
   box-shadow: 0 10px 30px rgba(15,23,42,.25);
   max-width: 360px;
+  transition: opacity .3s ease, transform .3s ease;
 }
 .kk-toast.is-err { background: #b91c1c; }
 .kk-editor {

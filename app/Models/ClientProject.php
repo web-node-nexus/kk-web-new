@@ -41,6 +41,21 @@ class ClientProject extends Model
         return $this->hasMany(ClientProjectReceipt::class)->latest();
     }
 
+    public function members(): HasMany
+    {
+        return $this->hasMany(ClientProjectMember::class)->with('employee');
+    }
+
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(ClientProjectRenewal::class)->orderBy('renew_date');
+    }
+
+    public function groupMessages(): HasMany
+    {
+        return $this->hasMany(ProjectGroupMessage::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

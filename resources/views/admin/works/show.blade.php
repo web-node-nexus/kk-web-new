@@ -68,7 +68,7 @@
     <section class="kk-card">
         <div class="kk-card__body">
             <h2 style="margin:0 0 10px;font-size:16px">Record received amount</h2>
-            <p class="kk-muted" style="margin:0 0 12px;font-size:12px">Amount receive hone pe client ko mail jaayegi. Receipt optional.</p>
+            <p class="kk-muted" style="margin:0 0 12px;font-size:12px">When amount is received, the client gets an email. Receipt is optional.</p>
             <form class="kk-form" method="POST" action="{{ route('admin.works.payment', $p->id) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="kk-field">
@@ -182,7 +182,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><div class="kk-empty">Abhi koi EMI nahi. Upar se add karo.</div></td></tr>
+                        <tr><td colspan="6"><div class="kk-empty">No EMI schedule yet. Add one above.</div></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -239,7 +239,176 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5"><div class="kk-empty">Koi extra receipt nahi. EMI receipts upar wali table me dikhengi.</div></td></tr>
+                        <tr><td colspan="5"><div class="kk-empty">No extra receipts. EMI receipts appear in the table above.</div></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="kk-card" style="margin-top:16px">
+    <div class="kk-card__body">
+        <h2 style="margin:0 0 6px;font-size:16px">Renewals (domain, server, consulting…)</h2>
+        <p class="kk-muted" style="margin:0 0 14px;font-size:13px">Track domain, server, hosting, SSL, consulting, maintenance and other renewals for this project.</p>
+
+        <form class="kk-form" method="POST" action="{{ route('admin.works.renewals.store', $p->id) }}" style="margin-bottom:16px">
+            @csrf
+            <div class="kk-form-grid">
+                <div class="kk-field">
+                    <label>Type *</label>
+                    <select name="type" required>
+                        @foreach (($renewalTypes ?? \App\Models\ClientProjectRenewal::TYPES) as $val => $label)
+                            <option value="{{ $val }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="kk-field">
+                    <label>Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. example.com domain">
+                </div>
+                <div class="kk-field">
+                    <label>Amount (₹)</label>
+                    <input type="number" step="0.01" min="0" name="amount">
+                </div>
+                <div class="kk-field">
+                    <label>Renew date</label>
+                    <input type="date" name="renew_date">
+                </div>
+                <div class="kk-field">
+                    <label>Status *</label>
+                    <select name="status" required>
+                        @foreach (['upcoming','due','paid','cancelled'] as $st)
+                            <option value="{{ $st }}">{{ ucfirst($st) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="kk-field">
+                    <label>Vendor</label>
+                    <input type="text" name="vendor" placeholder="e.g. GoDaddy / AWS">
+                </div>
+                <div class="kk-field" style="grid-column:1/-1">
+                    <label>Notes</label>
+                    <input type="text" name="notes" placeholder="Optional notes">
+                </div>
+            </div>
+            <div class="kk-form-actions" style="margin-top:8px">
+                <button class="kk-btn kk-btn-primary" type="submit">Add renewal</button>
+            </div>
+        </form>
+
+        <div class="kk-table-wrap">
+            <table class="kk-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Renew date</th>
+                        <th>Status</th>
+                        <th>Vendor</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($p->renewals as $ren)
+                        <tr>
+                            <td>{{ $ren->typeLabel() }}</td>
+                            <td>
+                                <strong>{{ $ren->name }}</strong>
+                                @if ($ren->notes)<div class="kk-muted" style="font-size:12px">{{ $ren->notes }}</div>@endif
+                            </td>
+                            <td>{{ $ren->amount !== null ? $money($ren->amount) : '—' }}</td>
+                            <td>{{ optional($ren->renew_date)->format('d M Y') ?: '—' }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('admin.works.renewals.update', [$p->id, $ren->id]) }}" style="display:flex;gap:6px;align-items:center">
+                                    @csrf
+                                    @method('PUT')
+                                    <select name="status" onchange="this.form.submit()">
+                                        @foreach (['upcoming','due','paid','cancelled'] as $st)
+                                            <option value="{{ $st }}" @selected($ren->status === $st)>{{ ucfirst($st) }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </td>
+                            <td>{{ $ren->vendor ?: '—' }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('admin.works.renewals.destroy', [$p->id, $ren->id]) }}" onsubmit="return confirm('Remove this renewal item?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="kk-btn kk-btn-danger kk-btn-sm" type="submit">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7"><div class="kk-empty">No renewals yet. Add domain, server, consulting, maintenance or other items above.</div></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="kk-card" style="margin-top:16px">
+    <div class="kk-card__body">
+        <h2 style="margin:0 0 6px;font-size:16px">Project team group</h2>
+        <p class="kk-muted" style="margin:0 0 14px;font-size:13px">Add employees who work on this project. They get a Project Groups chat on the employee panel and can @mention each other.</p>
+
+        <form class="kk-form" method="POST" action="{{ route('admin.works.members.store', $p->id) }}" style="margin-bottom:16px">
+            @csrf
+            <div class="kk-form-grid">
+                <div class="kk-field">
+                    <label>Employee *</label>
+                    <select name="employee_id" required>
+                        <option value="">Select employee…</option>
+                        @foreach (($employees ?? collect()) as $emp)
+                            <option value="{{ $emp->id }}">{{ $emp->name }} — {{ $emp->email }}@if($emp->role_title) ({{ $emp->role_title }})@endif</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="kk-field">
+                    <label>Role on project (optional)</label>
+                    <input type="text" name="role_label" placeholder="e.g. Developer, Designer, PM">
+                </div>
+            </div>
+            <div class="kk-form-actions" style="margin-top:8px">
+                <button class="kk-btn kk-btn-primary" type="submit">Add to group</button>
+            </div>
+        </form>
+
+        <div class="kk-table-wrap">
+            <table class="kk-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($p->members as $member)
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    @if ($member->employee?->photoUrl())
+                                        <img src="{{ $member->employee->photoUrl() }}" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover">
+                                    @endif
+                                    <strong>{{ $member->employee?->name ?? '—' }}</strong>
+                                </div>
+                            </td>
+                            <td>{{ $member->employee?->email ?? '—' }}</td>
+                            <td>{{ $member->role_label ?: ($member->employee?->role_title ?: '—') }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('admin.works.members.destroy', [$p->id, $member->id]) }}" onsubmit="return confirm('Remove this member from the project group?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="kk-btn kk-btn-danger kk-btn-sm" type="submit">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4"><div class="kk-empty">No team members yet. Add employees to build this project group.</div></td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -11,12 +11,19 @@ class Announcement extends Model
     protected $fillable = [
         'title',
         'body',
+        'image_path',
+        'link_url',
         'audience',
         'audience_type',
         'employee_id',
         'status',
         'published_at',
     ];
+
+    public function imageUrl(): ?string
+    {
+        return \App\Support\TaskMedia::url($this->image_path);
+    }
 
     protected function casts(): array
     {

@@ -14,5 +14,29 @@
 </head>
 <body>
     @yield('content')
+<script>
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pass-toggle]');
+  if (!btn) return;
+  const wrap = btn.closest('.kk-pass-wrap');
+  const input = wrap?.querySelector('input');
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  const open = btn.querySelector('.kk-eye-open');
+  const closed = btn.querySelector('.kk-eye-closed');
+  if (open && closed) {
+    open.hidden = show;
+    closed.hidden = !show;
+  }
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+});
+</script>
+<style>
+.kk-pass-wrap{position:relative;display:block}
+.kk-pass-wrap .glass-input,.kk-pass-wrap input{width:100%;padding-right:48px}
+.kk-pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;padding:4px;line-height:0}
+.kk-pass-toggle:hover{color:#fff}
+</style>
 </body>
 </html>

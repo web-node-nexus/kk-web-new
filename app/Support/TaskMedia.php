@@ -51,6 +51,12 @@ class TaskMedia
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        // Prefer request-relative asset URLs so images work even if APP_URL differs.
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+        if (str_starts_with($normalized, 'storage/')) {
+            return asset($normalized);
+        }
+
+        return asset('storage/'.$normalized);
     }
 }

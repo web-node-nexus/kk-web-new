@@ -61,7 +61,7 @@
                             @endphp
                             <article class="tn-portfolio-card">
                                 <div class="tn-portfolio-card__media">
-                                    @if ($case->video)
+                                    @if ($case->video && file_exists(public_path($case->video)))
                                         <video
                                             class="tn-portfolio-card__video"
                                             src="{{ asset($case->video) }}"

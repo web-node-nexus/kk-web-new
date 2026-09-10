@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CrudController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Employee\ProjectGroupController;
 use App\Http\Controllers\EmployeePortalController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\PageController;
@@ -70,7 +71,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifications/read-all', [EmployeePortalController::class, 'markNotificationsRead'])->name('notifications.read-all');
         Route::get('/notifications/{id}', [EmployeePortalController::class, 'openNotification'])->whereNumber('id')->name('notifications.open');
         Route::get('/profile', [EmployeePortalController::class, 'profile'])->name('profile');
+        Route::post('/profile/photo', [EmployeePortalController::class, 'updatePhoto'])->name('profile.photo');
+        Route::delete('/profile/photo', [EmployeePortalController::class, 'destroyPhoto'])->name('profile.photo.destroy');
         Route::post('/password', [EmployeePortalController::class, 'updatePassword'])->name('password');
+        Route::get('/todos', [EmployeePortalController::class, 'todos'])->name('todos.index');
+        Route::post('/todos', [EmployeePortalController::class, 'storeTodo'])->name('todos.store');
+        Route::post('/todos/{id}/toggle', [EmployeePortalController::class, 'toggleTodo'])->whereNumber('id')->name('todos.toggle');
+        Route::delete('/todos/{id}', [EmployeePortalController::class, 'destroyTodo'])->whereNumber('id')->name('todos.destroy');
+
+        Route::get('/project-groups', [ProjectGroupController::class, 'index'])->name('projects.index');
+        Route::get('/project-groups/{id}', [ProjectGroupController::class, 'show'])->whereNumber('id')->name('projects.show');
+        Route::get('/project-groups/{id}/messages', [ProjectGroupController::class, 'messages'])->whereNumber('id')->name('projects.messages');
+        Route::post('/project-groups/{id}/send', [ProjectGroupController::class, 'send'])->whereNumber('id')->name('projects.send');
     });
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
@@ -120,7 +132,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/live-chat/{employeeId}/stream', [\App\Http\Controllers\Admin\LiveChatController::class, 'stream'])->whereNumber('employeeId')->name('chat.stream');
         Route::post('/live-chat/{employeeId}/send', [\App\Http\Controllers\Admin\LiveChatController::class, 'send'])->whereNumber('employeeId')->name('chat.send');
 
+        Route::get('/todos', [\App\Http\Controllers\Admin\TodoController::class, 'index'])->name('todos.index');
+        Route::post('/todos', [\App\Http\Controllers\Admin\TodoController::class, 'store'])->name('todos.store');
+        Route::put('/todos/{id}', [\App\Http\Controllers\Admin\TodoController::class, 'update'])->whereNumber('id')->name('todos.update');
+        Route::post('/todos/{id}/toggle', [\App\Http\Controllers\Admin\TodoController::class, 'toggle'])->whereNumber('id')->name('todos.toggle');
+        Route::delete('/todos/{id}', [\App\Http\Controllers\Admin\TodoController::class, 'destroy'])->whereNumber('id')->name('todos.destroy');
+
         Route::get('/employees/search-hr', [CrudController::class, 'searchHrEmployees'])->name('employees.search-hr');
+        Route::post('/employees/generate-code', [CrudController::class, 'generateEmployeeCode'])->name('employees.generate-code');
         Route::get('/attendance-board', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/leave-requests', [\App\Http\Controllers\Admin\LeaveRequestController::class, 'index'])->name('leaves.index');
         Route::post('/leave-requests/{id}/decide', [\App\Http\Controllers\Admin\LeaveRequestController::class, 'decide'])->whereNumber('id')->name('leaves.decide');
@@ -147,6 +166,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/works/{id}/installments/{installmentId}/pay', [\App\Http\Controllers\Admin\ClientProjectController::class, 'payInstallment'])->whereNumber('id')->whereNumber('installmentId')->name('works.installments.pay');
         Route::post('/works/{id}/installments/{installmentId}/remind', [\App\Http\Controllers\Admin\ClientProjectController::class, 'remindInstallment'])->whereNumber('id')->whereNumber('installmentId')->name('works.installments.remind');
         Route::delete('/works/{id}/installments/{installmentId}', [\App\Http\Controllers\Admin\ClientProjectController::class, 'destroyInstallment'])->whereNumber('id')->whereNumber('installmentId')->name('works.installments.destroy');
+        Route::post('/works/{id}/members', [\App\Http\Controllers\Admin\ClientProjectController::class, 'addMember'])->whereNumber('id')->name('works.members.store');
+        Route::delete('/works/{id}/members/{memberId}', [\App\Http\Controllers\Admin\ClientProjectController::class, 'removeMember'])->whereNumber('id')->whereNumber('memberId')->name('works.members.destroy');
+        Route::post('/works/{id}/renewals', [\App\Http\Controllers\Admin\ClientProjectController::class, 'storeRenewal'])->whereNumber('id')->name('works.renewals.store');
+        Route::put('/works/{id}/renewals/{renewalId}', [\App\Http\Controllers\Admin\ClientProjectController::class, 'updateRenewal'])->whereNumber('id')->whereNumber('renewalId')->name('works.renewals.update');
+        Route::delete('/works/{id}/renewals/{renewalId}', [\App\Http\Controllers\Admin\ClientProjectController::class, 'destroyRenewal'])->whereNumber('id')->whereNumber('renewalId')->name('works.renewals.destroy');
         Route::post('/works/{id}/receipts', [\App\Http\Controllers\Admin\ClientProjectController::class, 'storeReceipt'])->whereNumber('id')->name('works.receipts.store');
         Route::delete('/works/{id}/receipts/{receiptId}', [\App\Http\Controllers\Admin\ClientProjectController::class, 'destroyReceipt'])->whereNumber('id')->whereNumber('receiptId')->name('works.receipts.destroy');
 

@@ -10,7 +10,7 @@
 <div class="kk-pagehead">
     <div>
         <h1>Payroll</h1>
-        <p>Employee choose karke slip save karo — turant uske Employee panel → Payroll me dikhegi. Receipt file bhi add kar sakte ho.</p>
+        <p>Choose an employee and save the slip — it appears in their Employee panel → Payroll. You can also attach a receipt file.</p>
     </div>
     <div class="kk-pagehead__actions">
         <a href="{{ route('admin.payroll.create') }}" class="kk-btn kk-btn-primary">

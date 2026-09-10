@@ -29,17 +29,15 @@
             </div>
 
             <div class="tn-hero-visual">
-                <div class="tn-hero-frame">
-                    <video
-                        id="hero-circle-video"
-                        src="{{ asset('videos/hero-circle.mp4') }}"
-                        autoplay
-                        loop
-                        playsinline
-                        preload="auto"
-                        disablepictureinpicture
-                        controlslist="nodownload nofullscreen noremoteplayback"
-                    ></video>
+                <div class="tn-hero-frame tn-hero-frame--logo">
+                    <img
+                        src="{{ asset('images/kk-hero-logo.png') }}"
+                        alt="KK Digital Solution — Innovate · Build · Grow"
+                        width="840"
+                        height="840"
+                        decoding="async"
+                        fetchpriority="high"
+                    >
                 </div>
 
                 <div class="tn-float-card tn-float-card--1">

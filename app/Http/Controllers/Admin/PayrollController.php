@@ -75,7 +75,7 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $data = $this->validated($request);
         $record = $this->persist($request, $data);
@@ -83,7 +83,7 @@ class PayrollController extends Controller
         return $this->afterSave(
             $request,
             $record,
-            'Payroll saved for '.$record->employee?->name.'. Employee panel → Payroll me slip dikhegi.'
+            'Payroll saved for '.$record->employee?->name.'. The slip is now visible in the employee panel.'
         );
     }
 
@@ -100,7 +100,7 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $record = PayrollRecord::query()->findOrFail($id);
         $data = $this->validated($request, $record);
@@ -109,7 +109,7 @@ class PayrollController extends Controller
         return $this->afterSave(
             $request,
             $record,
-            'Payroll updated for '.$record->employee?->name.'. Employee panel me naya amount dikhega.'
+            'Payroll updated for '.$record->employee?->name.'. The employee panel shows the new amount.'
         );
     }
 
@@ -170,35 +170,33 @@ class PayrollController extends Controller
             'deductions' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'status' => ['required', 'in:pending,paid'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'issue_date' => ['nullable', 'date'],
             'receipt' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:8192'],
             'remove_receipt' => ['nullable', 'boolean'],
             'open_receipt' => ['nullable'],
         ], [
-            'month.unique' => 'Is employee ke liye is month ka payroll pehle se hai. Edit karke update karo.',
+            'month.unique' => 'Payroll for this employee and month already exists. Edit the existing record.',
             'basic.max' => 'Basic amount too large. Max ₹9,99,99,999.99',
-            'receipt.mimes' => 'Receipt PDF, JPG, PNG ya WEBP honi chahiye.',
+            'receipt.mimes' => 'Receipt must be PDF, JPG, PNG, or WEBP.',
             'receipt.max' => 'Receipt file max 8 MB.',
         ]);
 
         $data['allowances'] = (float) ($data['allowances'] ?? 0);
         $data['deductions'] = (float) ($data['deductions'] ?? 0);
         $data['basic'] = (float) $data['basic'];
+        $data['issue_date'] = filled($data['issue_date'] ?? null) ? $data['issue_date'] : null;
         unset($data['receipt'], $data['remove_receipt'], $data['open_receipt']);
 
         return $data;
     }
 
-    protected function afterSave(Request $request, PayrollRecord $record, string $message): RedirectResponse
+    protected function afterSave(Request $request, PayrollRecord $record, string $message): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         if ($request->boolean('open_receipt')) {
-            return redirect()
-                ->route('admin.payroll.receipt', $record->id)
-                ->with('success', $message);
+            return \App\Support\Ajax::ok($request, $message, route('admin.payroll.receipt', $record->id));
         }
 
-        return redirect()
-            ->route('admin.payroll.index')
-            ->with('success', $message);
+        return \App\Support\Ajax::ok($request, $message, route('admin.payroll.index'));
     }
 
     /** @param  array<string, mixed>  $data */

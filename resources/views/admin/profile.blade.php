@@ -6,7 +6,7 @@
 <div class="kk-pagehead">
     <div>
         <h1>My profile</h1>
-        <p>Apni photo aur naam yahan se update karo. Top-right pe bhi yehi dikhegi.</p>
+        <p>Update your photo and name here. The same photo appears in the top-right menu.</p>
     </div>
 </div>
 
@@ -30,7 +30,7 @@
                         </label>
                     </form>
                     @if ($u->avatarUrl())
-                        <form method="POST" action="{{ route('admin.profile.avatar.destroy') }}" onsubmit="return confirm('Photo hataani hai?')" data-no-ajax>
+                        <form method="POST" action="{{ route('admin.profile.avatar.destroy') }}" onsubmit="return confirm('Remove profile photo?')" data-no-ajax>
                             @csrf
                             @method('DELETE')
                             <button class="kk-btn kk-btn-secondary kk-btn-sm" type="submit">Remove</button>
@@ -62,23 +62,32 @@
             </div>
         </form>
 
-        <form class="kk-form" method="POST" action="{{ route('admin.profile.password') }}" style="margin-top:28px">
+        <form id="password" class="kk-form" method="POST" action="{{ route('admin.profile.password') }}" style="margin-top:28px;scroll-margin-top:24px">
             @csrf
             @method('PUT')
             <h3 style="margin:0 0 12px">Change password</h3>
             <div class="kk-form-grid">
                 <div class="kk-field" style="grid-column:1/-1">
                     <label>Current password</label>
-                    <input type="password" name="current_password" required autocomplete="current-password">
+                    <div class="kk-pass-wrap">
+                        <input type="password" name="current_password" required autocomplete="current-password">
+                        <button type="button" class="kk-pass-toggle" data-pass-toggle aria-label="Show password">👁</button>
+                    </div>
                     @error('current_password')<p style="margin:6px 0 0;font-size:12px;color:#b91c1c">{{ $message }}</p>@enderror
                 </div>
                 <div class="kk-field">
                     <label>New password</label>
-                    <input type="password" name="password" required minlength="8" autocomplete="new-password">
+                    <div class="kk-pass-wrap">
+                        <input type="password" name="password" required minlength="8" autocomplete="new-password">
+                        <button type="button" class="kk-pass-toggle" data-pass-toggle aria-label="Show password">👁</button>
+                    </div>
                 </div>
                 <div class="kk-field">
                     <label>Confirm password</label>
-                    <input type="password" name="password_confirmation" required minlength="8" autocomplete="new-password">
+                    <div class="kk-pass-wrap">
+                        <input type="password" name="password_confirmation" required minlength="8" autocomplete="new-password">
+                        <button type="button" class="kk-pass-toggle" data-pass-toggle aria-label="Show password">👁</button>
+                    </div>
                 </div>
             </div>
             <div class="kk-form-actions">

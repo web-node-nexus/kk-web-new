@@ -19,12 +19,22 @@
                     </div>
                     <span class="ep-pill ep-pill--ok">{{ $row->isForEveryone() ? 'All' : 'Personal' }}</span>
                 </div>
+                @if ($row->imageUrl())
+                    <div style="margin-top:12px">
+                        <img src="{{ $row->imageUrl() }}" alt="" style="max-width:100%;max-height:280px;border-radius:12px;object-fit:cover;border:1px solid #e2e8f0">
+                    </div>
+                @endif
                 <p style="margin:12px 0 0;white-space:pre-wrap;line-height:1.65;color:#334155;font-size:14px">{{ $row->body }}</p>
+                @if ($row->link_url)
+                    <p style="margin:12px 0 0">
+                        <a href="{{ $row->link_url }}" target="_blank" rel="noopener noreferrer" style="color:#0f766e;font-weight:700;text-decoration:underline">Open link</a>
+                    </p>
+                @endif
             </article>
         @empty
             <div class="ep-empty">
                 <strong>No announcements</strong>
-                Jab admin announcement publish karega, yahan dikhega.
+                When admin publishes an announcement, it will appear here.
             </div>
         @endforelse
         <div>{{ $announcements->links() }}</div>

@@ -136,6 +136,14 @@ class DatabaseSeeder extends Seeder
 
         $cases = [
             [
+                'LoveCare Connected',
+                'HealthTech',
+                'Live website',
+                'Care and wellness platform connecting patients and providers with a clear, conversion-focused digital experience.',
+                'https://lovecareconnected.com/',
+                null,
+            ],
+            [
                 'Anayaraa',
                 'E-Commerce',
                 'Live marketplace',
@@ -150,14 +158,6 @@ class DatabaseSeeder extends Seeder
                 'Fresh food and delivery experience with a clean, conversion-focused digital storefront.',
                 'https://darbarfresh.com/',
                 'videos/portfolio/darbarfresh.mp4',
-            ],
-            [
-                'TerraMartz',
-                'Marketplace',
-                'Live marketplace',
-                'Modern marketplace platform for browsing, selling and shopping with a smooth commerce UX.',
-                'https://terramartz.com/',
-                'videos/portfolio/terramartz.mp4',
             ],
             [
                 'Flitpay',
@@ -404,15 +404,6 @@ class DatabaseSeeder extends Seeder
                 'group' => 'team',
                 'photo' => 'images/team/pranjal-ithapr.png',
                 'sort_order' => 5,
-            ],
-            [
-                'name' => 'Uddhav Dabhade',
-                'role' => 'Internship',
-                'bio' => 'Contributing to hands-on projects and growing as a builder within the K&K internship program.',
-                'phone' => null,
-                'group' => 'team',
-                'photo' => 'images/team/uddhav-dabhade.png',
-                'sort_order' => 6,
             ],
         ];
 
